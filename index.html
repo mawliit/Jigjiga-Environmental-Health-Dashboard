@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Jigjiga Environmental Health Dashboard</title>
+	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css">
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		
+		body {
+			font-family: 'Roboto', sans-serif;
+			background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+			color: #333;
+			line-height: 1.6;
+			padding-bottom: 40px;
+		}
+		
+		.container {
+			max-width: 1400px;
+			margin: 0 auto;
+			padding: 0 20px;
+		}
+		
+		header {
+			background: linear-gradient(120deg, #1a5f38 0%, #2c8a5c 100%);
+			color: white;
+			padding: 30px 0;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+			position: relative;
+			overflow: hidden;
+		}
+		
+		.header-content {
+			position: relative;
+			z-index: 2;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 20px;
+		}
+		
+		h1 {
+			font-family: 'Poppins', sans-serif;
+			font-weight: 700;
+			font-size: 1.9rem;
+			letter-spacing: -0.5px;
+			margin-bottom: 10px;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+		
+		.location-info {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			font-size: 1.2rem;
+			margin-top: 10px;
+		}
+		
+		.stats-summary {
+			display: flex;
+			background: white;
+			border-radius: 15px;
+			padding: 25px;
+			margin: 30px 0;
+			box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+			flex-wrap: wrap;
+		}
+		
+		.stat-card {
+			flex: 1;
+			text-align: center;
+			padding: 20px;
+			min-width: 220px;
+			border-right: 1px solid #eee;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			position: relative;
+		}
+		
+		.stat-card:last-child {
+			border-right: none;
+		}
+		
+		.stat-icon {
+			font-size: 2.5rem;
+			margin-bottom: 15px;
+			width: 70px;
+			height: 70px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
+			background: rgba(44, 138, 92, 0.1);
+			color: #1a5f38;
+			cursor: pointer;
+			transition: all 0.3s ease;
+		}
+		
+		.stat-icon:hover {
+			transform: scale(1.1);
+			background: rgba(44, 138, 92, 0.2);
+		}
+		
+		.stat-value {
+			font-size: 2.8rem;
+			font-weight: 700;
+			margin-bottom: 10px;
+			font-family: 'Poppins', sans-serif;
+		}
+		
+		.stat-label {
+			font-size: 1.1rem;
+			color: #555;
+		}
+		
+		.negative {
+			color: #e74c3c;
+		}
+		
+		.positive {
+			color: #27ae60;
+		}
+		
+		.neutral {
+			color: #3498db;
+		}
+		
+		.dashboard {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+			gap: 30px;
+			margin-top: 20px;
+		}
+		
+		.card {
+			background: white;
+			border-radius: 15px;
+			padding: 30px;
+			box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+			transition: transform 0.3s ease, box-shadow 0.3s ease;
+			position: relative;
+		}
+		
+		.card:hover {
+			transform: translateY(-7px);
+			box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+		}
+		
+		.card-full {
+			grid-column: 1 / -1;
+		}
+		
+		.card-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 25px;
+			border-bottom: 2px solid #f0f4f8;
+			padding-bottom: 20px;
+		}
+		
+		h2 {
+			font-family: 'Poppins', sans-serif;
+			font-weight: 600;
+			font-size: 1.8rem;
+			color: #1a5f38;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+		
+		.chart-container {
+			height: 350px;
+			position: relative;
+		}
+		
+		#map {
+			height: 500px;
+			border-radius: 12px;
+			overflow: hidden;
+			border: 1px solid #e0e6ed;
+		}
+		
+		.sample-data {
+			margin-top: 30px;
+			overflow-x: auto;
+		}
+		
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 20px;
+			font-size: 1.05rem;
+			min-width: 800px;
+		}
+		
+		th, td {
+			padding: 15px 20px;
+			text-align: left;
+			border-bottom: 1px solid #eee;
+		}
+		
+		th {
+			background-color: #f0f9ff;
+			font-weight: 600;
+			color: #1a5f38;
+			font-size: 1.1rem;
+		}
+		
+		tr:hover {
+			background-color: #f8fcfd;
+		}
+		
+		.tag {
+			display: inline-block;
+			padding: 6px 15px;
+			border-radius: 25px;
+			font-size: 0.95rem;
+			font-weight: 500;
+		}
+		
+		.tag-water {
+			background: #e1f5fe;
+			color: #0288d1;
+		}
+		
+		.tag-waste {
+			background: #e8f5e9;
+			color: #388e3c;
+		}
+		
+		.tag-air {
+			background: #fff3e0;
+			color: #f57c00;
+		}
+		
+		.tag-agriculture {
+			background: #f1f8e9;
+			color: #7cb342;
+		}
+		
+		.findings {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+			gap: 25px;
+			margin-top: 25px;
+		}
+		
+		.finding-card {
+			background: #f0f9f5;
+			border-left: 5px solid #2c8a5c;
+			padding: 20px;
+			border-radius: 8px;
+			transition: transform 0.3s ease;
+			display: flex;
+			flex-direction: column;
+			position: relative;
+		}
+		
+		.finding-card:hover {
+			transform: translateX(5px);
+		}
+		
+		.finding-card h3 {
+			font-size: 1.25rem;
+			margin-bottom: 12px;
+			color: #1a5f38;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+		
+		.footer {
+			text-align: center;
+			margin-top: 50px;
+			color: #555;
+			font-size: 1rem;
+			padding: 20px;
+			border-top: 1px solid #e0e6ed;
+		}
+		
+		.time-display {
+			background: rgba(255, 255, 255, 0.2);
+			padding: 8px 15px;
+			border-radius: 20px;
+			font-size: 1.1rem;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+		
+		.map-legend {
+			background: white;
+			padding: 15px;
+			border-radius: 8px;
+			box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+		}
+		
+		.legend-item {
+			display: flex;
+			align-items: center;
+			margin-bottom: 10px;
+		}
+		
+		.legend-color {
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			margin-right: 10px;
+		}
+		
+		.concerns-container {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 15px;
+			margin-top: 20px;
+		}
+		
+		.concern-item {
+			background: linear-gradient(to bottom, #f8fcfd, #e6f7ff);
+			border-radius: 12px;
+			padding: 25px 15px;
+			text-align: center;
+			transition: all 0.3s ease;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+			position: relative;
+		}
+		
+		.concern-item:hover {
+			transform: translateY(-5px);
+			box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+		}
+		
+		.concern-icon {
+			font-size: 3rem;
+			margin-bottom: 15px;
+			width: 80px;
+			height: 80px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
+			background: rgba(255, 255, 255, 0.7);
+			color: #1a5f38;
+			cursor: pointer;
+		}
+		
+		.concern-label {
+			font-size: 1.5rem;
+			font-weight: 700;
+			color: #1a5f38;
+		}
+		
+		.water-bg {
+			background: linear-gradient(135deg, #e1f5fe, #b3e5fc);
+		}
+		
+		.waste-bg {
+			background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+		}
+		
+		.soil-bg {
+			background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+		}
+		
+		.drought-bg {
+			background: linear-gradient(135deg, #fff8e1, #ffecb3);
+		}
+		
+		.quality-bg {
+			background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+		}
+		
+		.sanitation-bg {
+			background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+		}
+		
+		.header-icons {
+			display: flex;
+			gap: 10px;
+			margin-top: 15px;
+		}
+		
+		.icon-circle {
+			width: 50px;
+			height: 50px;
+			border-radius: 50%;
+			background: rgba(255, 255, 255, 0.2);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 1.5rem;
+			transition: transform 0.3s ease;
+			cursor: pointer;
+		}
+		
+		.icon-circle:hover {
+			transform: scale(1.1);
+			background: rgba(255, 255, 255, 0.3);
+		}
+		
+		/* Analysis Comments */
+		.analysis-comment {
+			position: absolute;
+			background: white;
+			border-radius: 10px;
+			padding: 15px;
+			box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+			z-index: 100;
+			width: 300px;
+			max-width: 90%;
+			display: none;
+			animation: fadeIn 0.3s ease;
+			border: 1px solid #e0e6ed;
+		}
+		
+		.analysis-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 10px;
+			padding-bottom: 8px;
+			border-bottom: 1px solid #eee;
+		}
+		
+		.analysis-title {
+			font-weight: 600;
+			color: #1a5f38;
+			font-size: 1.1rem;
+		}
+		
+		.close-analysis {
+			background: none;
+			border: none;
+			font-size: 1.2rem;
+			cursor: pointer;
+			color: #777;
+		}
+		
+		.analysis-content {
+			font-size: 0.95rem;
+			line-height: 1.5;
+		}
+		
+		.analysis-content ul {
+			padding-left: 20px;
+			margin-top: 10px;
+		}
+		
+		.analysis-content li {
+			margin-bottom: 5px;
+		}
+		
+		@keyframes fadeIn {
+			from { opacity: 0; transform: translateY(10px); }
+			to { opacity: 1; transform: translateY(0); }
+		}
+		
+		/* Mobile-specific styles */
+		@media (max-width: 1100px) {
+			.dashboard {
+				grid-template-columns: 1fr;
+			}
+			
+			.stats-summary {
+				flex-direction: column;
+			}
+			
+			.stat-card {
+				border-right: none;
+				border-bottom: 1px solid #eee;
+				padding: 25px 0;
+			}
+			
+			.stat-card:last-child {
+				border-bottom: none;
+			}
+		}
+		
+		@media (max-width: 768px) {
+			h1 {
+				font-size: 1.5rem;
+			}
+			
+			.location-info {
+				font-size: 1rem;
+			}
+			
+			.time-display {
+				font-size: 1rem;
+				padding: 6px 12px;
+			}
+			
+			.card {
+				padding: 20px;
+			}
+			
+			h2 {
+				font-size: 1.5rem;
+			}
+			
+			.chart-container {
+				height: 300px;
+			}
+			
+			#map {
+				height: 400px;
+			}
+			
+			.concerns-container {
+				grid-template-columns: repeat(2, 1fr);
+			}
+			
+			.stat-value {
+				font-size: 2.2rem;
+			}
+			
+			.header-content {
+				flex-direction: column;
+				align-items: flex-start;
+			}
+			
+			.header-icons {
+				margin-top: 10px;
+			}
+			
+			.icon-circle {
+				width: 40px;
+				height: 40px;
+				font-size: 1.2rem;
+			}
+		}
+		
+		@media (max-width: 480px) {
+			.concerns-container {
+				grid-template-columns: 1fr;
+			}
+			
+			.stat-icon {
+				width: 50px;
+				height: 50px;
+				font-size: 1.8rem;
+			}
+			
+			.stat-value {
+				font-size: 1.8rem;
+			}
+			
+			.card-header {
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 15px;
+			}
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<div class="container">
+			<div class="header-content">
+				<div>
+					<h1><i class="fas fa-leaf"></i> Jigjiga Environmental Health  Dashboard</h1>
+					<div class="location-info">
+						<i class="fas fa-map-marker-alt"></i>
+						<span>Jigjiga, Somali Region, Ethiopia | Local Time: <span id="current-time">10:45 AM, July 25, 2024</span></span>
+					</div>
+					<div class="header-icons">
+						<div class="icon-circle" data-comment="water-analysis">
+							<i class="fas fa-tint"></i>
+						</div>
+						<div class="icon-circle" data-comment="waste-analysis">
+							<i class="fas fa-trash"></i>
+						</div>
+						<div class="icon-circle" data-comment="agri-analysis">
+							<i class="fas fa-seedling"></i>
+						</div>
+						<div class="icon-circle" data-comment="air-analysis">
+							<i class="fas fa-wind"></i>
+						</div>
+					</div>
+				</div>
+				<div class="time-display">
+					<i class="fas fa-clock"></i>
+					<span id="live-clock">10:45:32 AM</span>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<div class="container">
+		<div class="stats-summary">
+			<div class="stat-card">
+				<div class="stat-icon" data-comment="reports-analysis">
+					<i class="fas fa-file-alt"></i>
+				</div>
+				<div class="stat-value">187</div>
+				<div class="stat-label">Environmental Reports</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-icon" data-comment="sentiment-analysis">
+					<i class="fas fa-comment-dots"></i>
+				</div>
+				<div class="stat-value neutral">-0.38</div>
+				<div class="stat-label">Average Sentiment</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-icon" data-comment="urgent-analysis">
+					<i class="fas fa-exclamation-circle"></i>
+				</div>
+				<div class="stat-value">58%</div>
+				<div class="stat-label">Urgent Concerns</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-icon" data-comment="resolved-analysis">
+					<i class="fas fa-check-circle"></i>
+				</div>
+				<div class="stat-value positive">42</div>
+				<div class="stat-label">Resolved Issues</div>
+			</div>
+		</div>
+
+		<div class="dashboard">
+			<div class="card">
+				<div class="card-header">
+					<h2><i class="fas fa-chart-line"></i> Reports Over Time</h2>
+					<i class="fas fa-info-circle stat-icon" data-comment="chart-analysis"></i>
+				</div>
+				<div class="chart-container">
+					<canvas id="timeChart"></canvas>
+				</div>
+			</div>
+			
+			<div class="card">
+				<div class="card-header">
+					<h2><i class="fas fa-chart-pie"></i> Hazard Distribution</h2>
+					<i class="fas fa-info-circle stat-icon" data-comment="hazard-analysis"></i>
+				</div>
+				<div class="chart-container">
+					<canvas id="hazardChart"></canvas>
+				</div>
+			</div>
+			
+			<div class="card">
+				<div class="card-header">
+					<h2><i class="fas fa-smile"></i> Community Sentiment</h2>
+					<i class="fas fa-info-circle stat-icon" data-comment="sentiment-chart-analysis"></i>
+				</div>
+				<div class="chart-container">
+					<canvas id="sentimentChart"></canvas>
+				</div>
+			</div>
+			
+			<div class="card">
+				<div class="card-header">
+					<h2><i class="fas fa-cloud"></i> Common Concerns</h2>
+					<i class="fas fa-info-circle stat-icon" data-comment="concerns-analysis"></i>
+				</div>
+				<div class="concerns-container">
+					<div class="concern-item water-bg">
+						<div class="concern-icon" data-comment="water-concern">
+							<i class="fas fa-tint"></i>
+						</div>
+						<div class="concern-label">WATER</div>
+					</div>
+					<div class="concern-item waste-bg">
+						<div class="concern-icon" data-comment="waste-concern">
+							<i class="fas fa-trash"></i>
+						</div>
+						<div class="concern-label">WASTE</div>
+					</div>
+					<div class="concern-item soil-bg">
+						<div class="concern-icon" data-comment="soil-concern">
+							<i class="fas fa-seedling"></i>
+						</div>
+						<div class="concern-label">SOIL</div>
+					</div>
+					<div class="concern-item drought-bg">
+						<div class="concern-icon" data-comment="drought-concern">
+							<i class="fas fa-sun"></i>
+						</div>
+						<div class="concern-label">DROUGHT</div>
+					</div>
+					<div class="concern-item quality-bg">
+						<div class="concern-icon" data-comment="quality-concern">
+							<i class="fas fa-flask"></i>
+						</div>
+						<div class="concern-label">QUALITY</div>
+					</div>
+					<div class="concern-item sanitation-bg">
+						<div class="concern-icon" data-comment="sanitation-concern">
+							<i class="fas fa-hand-holding-water"></i>
+						</div>
+						<div class="concern-label">SANITATION</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="card card-full">
+				<div class="card-header">
+					<h2><i class="fas fa-map-marked-alt"></i> Environmental Map</h2>
+					<i class="fas fa-info-circle stat-icon" data-comment="map-analysis"></i>
+				</div>
+				<div id="map"></div>
+			</div>
+			
+			<div class="card card-full">
+				<div class="card-header">
+					<h2><i class="fas fa-table"></i> Recent Reports</h2>
+					<i class="fas fa-info-circle stat-icon" data-comment="reports-analysis"></i>
+				</div>
+				<div class="sample-data">
+					<table>
+						<thead>
+							<tr>
+								<th>Date & Time</th>
+								<th>Location</th>
+								<th>Concern</th>
+								<th>Sentiment</th>
+								<th>Hazard Type</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Today, 08:30 AM</td>
+								<td>Kebri Dehar District</td>
+								<td>Water shortage in households</td>
+								<td class="negative">-0.91</td>
+								<td><span class="tag tag-water">Water</span></td>
+							</tr>
+							<tr>
+								<td>Yesterday, 03:15 PM</td>
+								<td>Central Market</td>
+								<td>Improper waste disposal</td>
+								<td class="negative">-0.85</td>
+								<td><span class="tag tag-waste">Waste</span></td>
+							</tr>
+							<tr>
+								<td>July 23, 11:20 AM</td>
+								<td>Awbere Refugee Camp</td>
+								<td>New water filtration system</td>
+								<td class="positive">+0.76</td>
+								<td><span class="tag tag-water">Water</span></td>
+							</tr>
+							<tr>
+								<td>July 22, 09:45 AM</td>
+								<td>Harshin Agricultural Area</td>
+								<td>Soil degradation</td>
+								<td class="negative">-0.68</td>
+								<td><span class="tag tag-agriculture">Agriculture</span></td>
+							</tr>
+							<tr>
+								<td>July 21, 02:30 PM</td>
+								<td>Degahbour District</td>
+								<td>Community clean-up success</td>
+								<td class="positive">+0.82</td>
+								<td><span class="tag tag-waste">Waste</span></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			
+			<div class="card card-full">
+				<div class="card-header">
+					<h2><i class="fas fa-lightbulb"></i> Key Findings</h2>
+					<i class="fas fa-info-circle stat-icon" data-comment="findings-analysis"></i>
+				</div>
+				<div class="findings">
+					<div class="finding-card">
+						<h3><i class="fas fa-tint"></i> Water Scarcity</h3>
+						<p>63% of reports relate to water access issues, worsening in dry season (Jan-Mar).</p>
+					</div>
+					<div class="finding-card">
+						<h3><i class="fas fa-trash-alt"></i> Waste Management</h3>
+						<p>Market areas show 45% higher waste complaints than residential zones.</p>
+					</div>
+					<div class="finding-card">
+						<h3><i class="fas fa-tree"></i> Agricultural Impact</h3>
+						<p>Soil degradation concerns increased by 32% YoY, affecting crop yields.</p>
+					</div>
+					<div class="finding-card">
+						<h3><i class="fas fa-hands-helping"></i> Community Action</h3>
+						<p>Local initiatives show 78% positive sentiment with measurable impact.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="footer">
+			<p>Jigjiga Environmental Health Dashboard | Developer Mawliit Mahamed Apdi| Data current as of <span id="current-date">July 25, 2024</span></p>
+			<div style="margin-top: 15px;">
+				<i class="fas fa-seedling" style="color: #2c8a5c; font-size: 1.5rem;"></i>
+			</div>
+		</div>
+	</div>
+
+	<!-- Analysis Comments -->
+	<div class="analysis-comment" id="reports-analysis">
+		<div class="analysis-header">
+			<div class="analysis-title">Report Analysis</div>
+			<button class="close-analysis">&times;</button>
+		</div>
+		<div class="analysis-content">
+			<p>187 environmental reports have been submitted this month. This represents a 15% increase compared to last month.</p>
+			<ul>
+				<li>63% of reports are related to water issues</li>
+				<li>22% of reports are classified as high priority</li>
+				<li>Average response time: 3.2 days</li>
+			</ul>
+		</div>
+	</div>
+	
+	<div class="analysis-comment" id="sentiment-analysis">
+		<div class="analysis-header">
+			<div class="analysis-title">Sentiment Analysis</div>
+			<button class="close-analysis">&times;</button>
+		</div>
+		<div class="analysis-content">
+			<p>Average sentiment score: -0.38 (slightly negative)</p>
+			<ul>
+				<li>Water issues have the most negative sentiment (-0.71)</li>
+				<li>Community initiatives have positive sentiment (+0.78)</li>
+				<li>Waste management sentiment improved 12% since last quarter</li>
+			</ul>
+		</div>
+	</div>
+	
+	<div class="analysis-comment" id="chart-analysis">
+		<div class="analysis-header">
+			<div class="analysis-title">Time Trend Analysis</div>
+			<button class="close-analysis">&times;</button>
+		</div>
+		<div class="analysis-content">
+			<p>Reports show a weekly pattern with peaks on Tuesdays and Thursdays.</p>
+			<ul>
+				<li>July 24th had the highest reports (31)</li>
+				<li>Current decrease is due to ongoing data collection</li>
+				<li>20% increase in reports during market days</li>
+			</ul>
+		</div>
+	</div>
+	
+	<div class="analysis-comment" id="water-concern">
+		<div class="analysis-header">
+			<div class="analysis-title">Water Concern Analysis</div>
+			<button class="close-analysis">&times;</button>
+		</div>
+		<div class="analysis-content">
+			<p>Water scarcity remains the top environmental concern in Jigjiga.</p>
+			<ul>
+				<li>Affects 63% of households in dry season</li>
+				<li>Water quality issues in 3 districts</li>
+				<li>Filtration projects have improved access for 12,000 residents</li>
+			</ul>
+		</div>
+	</div>
+	
+	# waxaan rabaa ku darayaa#
+	
+	<div class="analysis-comment" id="map-analysis">
+		<div class="analysis-header">
+			<div class="analysis-title">Map Analysis</div>
+			<button class="close-analysis">&times;</button>
+		</div>
+		<div class="analysis-content">
+			<p>Geographic distribution of environmental concerns:</p>
+			<ul>
+				<li>Central Market: Waste management hotspot</li>
+				<li>Kebri Dehar: Water scarcity critical area</li>
+				<li>Harshin: Agricultural soil degradation</li>
+				<li>Green areas show successful interventions</li>
+			</ul>
+		</div>
+	</div>
+	
+	<div class="analysis-comment" id="findings-analysis">
+		<div class="analysis-header">
+			<div class="analysis-title">Key Findings Analysis</div>
+			<button class="close-analysis">&times;</button>
+		</div>
+		<div class="analysis-content">
+			<p>Summary of critical environmental insights:</p>
+			<ul>
+				<li>Water scarcity requires infrastructure investment</li>
+				<li>Waste management needs market-day solutions</li>
+				<li>Soil degradation impacts food security</li>
+				<li>Community initiatives are highly effective</li>
+			</ul>
+		</div>
+	</div>
+
+	<script>
+		// Update time displays
+		function updateTime() {
+			const now = new Date();
+			const options = { 
+				weekday: 'long', 
+				year: 'numeric', 
+				month: 'long', 
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit',
+				hour12: true
+			};
+			
+			const formattedDateTime = now.toLocaleString('en-US', options);
+			const timeOnly = now.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', second:'2-digit', hour12: true});
+			
+			document.getElementById('current-time').textContent = formattedDateTime;
+			document.getElementById('live-clock').textContent = timeOnly;
+		}
+		
+		// Initial time update and set interval
+		updateTime();
+		setInterval(updateTime, 1000);
+		
+		// Set current date in footer
+		const now = new Date();
+		document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', { 
+			year: 'numeric', 
+			month: 'long', 
+			day: 'numeric' 
+		});
+
+		// Analysis Comments Logic
+		document.querySelectorAll('[data-comment]').forEach(icon => {
+			icon.addEventListener('click', function(e) {
+				e.stopPropagation();
+				
+				// Close any open comments
+				document.querySelectorAll('.analysis-comment').forEach(comment => {
+					comment.style.display = 'none';
+				});
+				
+				// Get the comment ID
+				const commentId = this.getAttribute('data-comment');
+				const comment = document.getElementById(commentId);
+				
+				if (comment) {
+					// Position near the clicked icon
+					const rect = this.getBoundingClientRect();
+					comment.style.top = (rect.top + window.scrollY + rect.height + 10) + 'px';
+					comment.style.left = (rect.left + window.scrollX) + 'px';
+					comment.style.display = 'block';
+				}
+			});
+		});
+		
+		// Close buttons
+		document.querySelectorAll('.close-analysis').forEach(btn => {
+			btn.addEventListener('click', function() {
+				this.closest('.analysis-comment').style.display = 'none';
+			});
+		});
+		
+		// Close comments when clicking anywhere else
+		document.addEventListener('click', function() {
+			document.querySelectorAll('.analysis-comment').forEach(comment => {
+				comment.style.display = 'none';
+			});
+		});
+		
+		// Prevent closing when clicking inside comment
+		document.querySelectorAll('.analysis-comment').forEach(comment => {
+			comment.addEventListener('click', function(e) {
+				e.stopPropagation();
+			});
+		});
+
+		// Time Trend Chart
+		const timeCtx = document.getElementById('timeChart').getContext('2d');
+		const timeChart = new Chart(timeCtx, {
+			type: 'line',
+			data: {
+				labels: ['Jul 18', 'Jul 19', 'Jul 20', 'Jul 21', 'Jul 22', 'Jul 23', 'Jul 24', 'Today'],
+				datasets: [{
+					label: 'Environmental Reports',
+					data: [22, 28, 25, 30, 24, 27, 31, 18],
+					borderColor: '#2c8a5c',
+					backgroundColor: 'rgba(44, 138, 92, 0.1)',
+					borderWidth: 4,
+					pointBackgroundColor: '#1a5f38',
+					pointRadius: 6,
+					tension: 0.2,
+					fill: true
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: {
+						display: false
+					}
+				},
+				scales: {
+					y: {
+						beginAtZero: true,
+						grid: {
+							color: 'rgba(0, 0, 0, 0.05)'
+						},
+						ticks: {
+							font: {
+								size: 14
+							}
+						}
+					},
+					x: {
+						grid: {
+							display: false
+						},
+						ticks: {
+							font: {
+								size: 14
+							}
+						}
+					}
+				}
+			}
+		});
+
+		// Hazard Distribution Chart
+		const hazardCtx = document.getElementById('hazardChart').getContext('2d');
+		const hazardChart = new Chart(hazardCtx, {
+			type: 'doughnut',
+			data: {
+				labels: ['Water Access', 'Waste Management', 'Soil Quality', 'Agricultural Impact'],
+				datasets: [{
+					data: [42, 28, 18, 12],
+					backgroundColor: [
+						'rgba(52, 152, 219, 0.9)',
+						'rgba(46, 204, 113, 0.9)',
+						'rgba(155, 89, 182, 0.9)',
+						'rgba(241, 196, 15, 0.9)'
+					],
+					borderWidth: 0
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: {
+						position: 'right',
+						labels: {
+							font: {
+								size: 14
+							}
+						}
+					}
+				},
+				cutout: '60%'
+			}
+		});
+
+		// Sentiment Analysis Chart
+		const sentimentCtx = document.getElementById('sentimentChart').getContext('2d');
+		const sentimentChart = new Chart(sentimentCtx, {
+			type: 'bar',
+			data: {
+				labels: ['Water Issues', 'Waste Problems', 'Agriculture', 'Community Action'],
+				datasets: [{
+					label: 'Average Sentiment',
+					data: [-0.71, -0.65, -0.58, 0.78],
+					backgroundColor: [
+						'rgba(52, 152, 219, 0.8)',
+						'rgba(46, 204, 113, 0.8)',
+						'rgba(155, 89, 182, 0.8)',
+						'rgba(241, 196, 15, 0.8)'
+					],
+					borderWidth: 0
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: {
+						display: false
+					}
+				},
+				scales: {
+					y: {
+						min: -1,
+						max: 1,
+						grid: {
+							color: 'rgba(0, 0, 0, 0.05)'
+						},
+						ticks: {
+							font: {
+								size: 14
+							}
+						}
+					},
+					x: {
+						grid: {
+							display: false
+						},
+						ticks: {
+							font: {
+								size: 14
+							}
+						}
+					}
+				}
+			}
+		});
+
+		// Initialize the map centered on Jigjiga
+		const map = L.map('map').setView([9.3500, 42.8000], 13);
+
+		// Add tile layer
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+		}).addTo(map);
+
+		// Define custom icons
+		const waterIcon = L.icon({
+			iconUrl: 'https://cdn-icons-png.flaticon.com/512/3063/3063815.png',
+			iconSize: [35, 35],
+			iconAnchor: [17, 35]
+		});
+		
+		const wasteIcon = L.icon({
+			iconUrl: 'https://cdn-icons-png.flaticon.com/512/4470/4470408.png',
+			iconSize: [35, 35],
+			iconAnchor: [17, 35]
+		});
+		
+		const agricultureIcon = L.icon({
+			iconUrl: 'https://cdn-icons-png.flaticon.com/512/3126/3126590.png',
+			iconSize: [35, 35],
+			iconAnchor: [17, 35]
+		});
+
+		// Add markers for Jigjiga locations
+		const jigjigaLocations = [
+			{name: "Central Market", lat: 9.358, lng: 42.795, type: "waste", reports: 45, sentiment: -0.82},
+			{name: "Kebri Dehar District", lat: 9.372, lng: 42.812, type: "water", reports: 38, sentiment: -0.91},
+			{name: "Awbere Refugee Camp", lat: 9.341, lng: 42.831, type: "water", reports: 32, sentiment: 0.76},
+			{name: "Harshin Agricultural Area", lat: 9.326, lng: 42.779, type: "agriculture", reports: 28, sentiment: -0.58},
+			{name: "Degahbour District", lat: 9.388, lng: 42.765, type: "waste", reports: 24, sentiment: 0.82},
+			{name: "Jigjiga University", lat: 9.335, lng: 42.805, type: "water", reports: 20, sentiment: -0.65}
+		];
+
+		// Add markers to map
+		jigjigaLocations.forEach(location => {
+			let icon;
+			if (location.type === "water") icon = waterIcon;
+			else if (location.type === "waste") icon = wasteIcon;
+			else icon = agricultureIcon;
+			
+			const marker = L.marker([location.lat, location.lng], {icon: icon}).addTo(map);
+			
+			const sentimentClass = location.sentiment > 0 ? "positive" : "negative";
+			
+			marker.bindPopup(`
+				<div style="font-weight:700; font-size:1.2rem; margin-bottom:8px;">${location.name}</div>
+				<div><strong>Issue Type:</strong> ${location.type.charAt(0).toUpperCase() + location.type.slice(1)}</div>
+				<div><strong>Reports:</strong> ${location.reports}</div>
+				<div><strong>Sentiment:</strong> <span class="${sentimentClass}">${location.sentiment}</span></div>
+			`);
+		});
+
+		// Add legend
+		const legend = L.control({position: 'bottomright'});
+		legend.onAdd = function(map) {
+			const div = L.DomUtil.create('div', 'map-legend');
+			div.innerHTML = `
+				<h3 style="margin-bottom:12px; color:#1a5f38;">Legend</h3>
+				<div class="legend-item">
+					<div class="legend-color" style="background:#3498db;"></div>
+					<span>Water Issues</span>
+				</div>
+				<div class="legend-item">
+					<div class="legend-color" style="background:#27ae60;"></div>
+					<span>Waste Problems</span>
+				</div>
+				<div class="legend-item">
+					<div class="legend-color" style="background:#f1c40f;"></div>
+					<span>Agricultural Concerns</span>
+				</div>
+			`;
+			return div;
+		};
+		legend.addTo(map);
+	</script>
+</body>
+</html>
